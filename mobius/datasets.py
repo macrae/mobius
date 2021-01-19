@@ -29,7 +29,8 @@ class TabularSiameseDataset(Dataset):
         )
 
         # get some jth item and a label indicating sameness wrt the ith
-        row2_cats, row2_conts, same = self._draw(i)
+        row2, same = self._draw(i)
+        row2_cats, row2_conts = row2[0], row2[1]
 
         return (
             (row1_cats.long(), row1_conts.float()),
@@ -45,7 +46,7 @@ class TabularSiameseDataset(Dataset):
         if not same:
             cls = random.choice(
                 [label for label in set(self.tabular_pandas.y) if label != cls])
-        return *self.lbl2rows(cls), int(same)
+        return self.lbl2rows(cls), int(same)
 
     def lbl2rows(self, cls):
         train_df = self.tabular_pandas.train
