@@ -1,6 +1,9 @@
+from collections import Counter
+
 import torch
 import torch.nn.functional as F
 from torch.nn import Module
+from fastcore.foundation import L
 
 
 class ContrastiveLoss(Module):
@@ -48,3 +51,20 @@ class F1ScoreLoss(Module):
         f1 = 2 * (precision*recall) / (precision + recall + self.epsilon)
         f1 = f1.clamp(min=self.epsilon, max=1-self.epsilon)
         return 1 - f1.mean()
+
+
+# # Get weights based on the class distribution in the training data
+# def get_weights(dls):
+
+#     classes = dls.vocab[1]
+
+#     # combine the above into a single
+#     train_lbls = L(map(lambda x: classes[x[1]], dls.train_ds))
+#     label_counter = Counter(train_lbls)
+#     n_most_common_class = max(label_counter.values())
+#     print(f'Occurrences of the most common class {n_most_common_class}')
+
+#     # Source: https://discuss.pytorch.org/t/what-is-the-weight-values-mean-in-torch-nn-crossentropyloss/11455/9
+#     weights = [n_most_common_class/v for k,
+#                v in label_counter.items() if v > 0]
+#     return weights

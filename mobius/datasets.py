@@ -21,22 +21,16 @@ class TabularSiameseDataset(Dataset):
 
     def __getitem__(self, i):
         # get the ith item
-        row1_cats, row1_conts = (
-            tensor(
-                self.tabular_pandas.train.dataloaders().cats.iloc[i].values),
-            tensor(
-                self.tabular_pandas.train.dataloaders().conts.iloc[i].values)
-        )
+        row1_cats = tensor(
+            self.tabular_pandas.train.dataloaders().cats.iloc[i].values)
+        row1_conts = tensor(
+            self.tabular_pandas.train.dataloaders().conts.iloc[i].values)
 
-        # get some jth item and a label indicating sameness wrt the ith
+        # get some jth item and a label indicating sameness wrt the ith item
         row2, same = self._draw(i)
         row2_cats, row2_conts = row2[0], row2[1]
 
-        return (
-            (row1_cats.long(), row1_conts.float()),
-            (row2_cats.long(), row2_conts.float()),
-            torch.Tensor([int(same)]).squeeze().long()
-        )
+        return (row1_cats.long(), row1_conts.float()), (row2_cats.long(), row2_conts.float()), torch.Tensor([int(same)]).squeeze().long()
 
     def __len__(self): return len(self.tabular_pandas)
 
