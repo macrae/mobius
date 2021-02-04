@@ -25,6 +25,46 @@ settings.register_profile(
 
 
 @pytest.fixture
+def tabular_siamese_unit_neg():
+    "A single, static example of input into a siamese network for the palmers penguins df"
+    import torch
+    from torch import tensor
+
+    return (
+        torch.cat((
+            tensor([1, 2]),
+            tensor([1., 2.])
+        )),
+
+        torch.cat((
+            tensor([-1, -2]),
+            tensor([-1., -2.])
+        )),
+        tensor(0)
+    )
+
+
+@pytest.fixture
+def tabular_siamese_unit_pos():
+    "A single, static example of input into a siamese network for the palmers penguins df"
+    import torch
+    from torch import tensor
+
+    return (
+        torch.cat((
+            tensor([1, 2]),
+            tensor([1., 2.])
+        )),
+
+        torch.cat((
+            tensor([2, 3]),
+            tensor([2., 3.])
+        )),
+        tensor(1)
+    )
+
+
+@pytest.fixture
 def tabular_siamese_record():
     "A single, static example of input into a siamese network for the palmers penguins df"
     import torch
