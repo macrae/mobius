@@ -1,12 +1,9 @@
+from mobius import datasets
 from torch import Tensor
 
-from tabular_siamese import (ContrastiveLoss,
-                             TabularSiameseDataset,
-                             TabularSiameseModel)
 
-
-def test_unit_test_tabular_siamese_dataset(unit_test_tabular_siamese_dataset):
-    p1, p2, label = unit_test_tabular_siamese_dataset
+def test_unit_test_tabular_siamese_dataset(tabular_siamese_record):
+    p1, p2, label = tabular_siamese_record
     assert isinstance(p1, Tensor)
     assert isinstance(p2, Tensor)
     assert all(isinstance(t, Tensor) for t in p1)
@@ -15,6 +12,6 @@ def test_unit_test_tabular_siamese_dataset(unit_test_tabular_siamese_dataset):
 
 
 def test_TabularSiameseDataset():
-    results = set(dir(TabularSiameseDataset))
+    results = set(dir(datasets.TabularSiameseDataset))
     expected = {"__getitem__", "_draw", "lbl2rows", "get_items"}
     assert expected.issubset(results)

@@ -1,11 +1,7 @@
-from torch import Tensor
-
-from tabular_siamese import (ContrastiveLoss,
-                             TabularSiameseDataset,
-                             TabularSiameseModel)
+from mobius import models
 
 
 def test_TabularSiameseModel():
-    results = set(dir(TabularSiameseModel))
+    results = set(dir(models.TabularSiameseModel))
     expected = {"forward", "encode"}
     assert expected.issubset(results)
