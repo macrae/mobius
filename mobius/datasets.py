@@ -40,7 +40,7 @@ class TabularSiameseDataset(Dataset):
         if not same:
             cls = random.choice(
                 [label for label in set(self.tabular_pandas.y) if label != cls])
-        return self.lbl2rows(cls), int(same)
+        return self.lbl2rows(cls), int(not same)
 
     def lbl2rows(self, cls):
         train_df = self.tabular_pandas.train

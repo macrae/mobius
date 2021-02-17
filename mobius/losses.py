@@ -19,13 +19,31 @@ class ContrastiveLoss(Module):
         p1, p2, label = ops[0], ops[1], ops[2]
 
         # distance between positive tensors
-        euclidean_distance = F.pairwise_distance(
-            p1.reshape(1, -1), p2.reshape(1, -1), keepdim=False)
+        dist = F.pairwise_distance(p1.reshape(1, -1), p2.reshape(1, -1), keepdim=False)
 
-        loss_contrastive = torch.mean((1-label) * torch.pow(euclidean_distance, 2) +
-                                      (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
+        pdist = torch.pow(dist, 2)
+        ndist = torch.pow(torch.max(torch.tensor((self.margin - dist, 0.0))), 2)
 
-        return loss_contrastive
+        loss = torch.sum(((1 - label) * 0.5 * pdist) + (label * 0.5 * ndist))
+
+        # loss = torch.sum(0.5 * ((pdist**2) + (F.relu(self.margin - ndist)**2)))
+
+        return loss
+
+# class ContrastiveLoss(Module):
+#     """Takes embeddings of two samples and a target label == 1 if samples are from the same class and label == 0 otherwise
+#     """
+#     def __init__(self, margin=5.):
+#         super(ContrastiveLoss, self).__init__()
+#         self.margin = margin
+
+#     def forward(self, ops, size_average=True):
+#         p1, p2, label = ops[0], ops[1], ops[2]
+#         dist = F.pairwise_distance(p1.reshape(1, -1), p2.reshape(1, -1), keepdim=False)
+#         pdist = dist * label
+#         ndist = dist * (1 - label)
+#         loss = 0.5 * ((pdist**2) + (F.relu(self.margin - ndist)**2))
+#         loss.sum()
 
 
 class F1ScoreLoss(Module):
