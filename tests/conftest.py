@@ -1,19 +1,28 @@
 """pytest configuration file"""
 import pytest
 from hypothesis import HealthCheck, Verbosity, settings
+import torch
+from torch import tensor
 
 # register hypothesis search strategy options
 settings.register_profile(
-    "suppress_deadline",
+    "maximum",
     deadline=None,
     suppress_health_check=(HealthCheck.too_slow,),
-    max_examples=10,
+    max_examples=500
+)
+
+settings.register_profile(
+    "ci",
+    deadline=None,
+    suppress_health_check=(HealthCheck.too_slow,),
+    max_examples=50
 )
 settings.register_profile(
-    "ci", deadline=None, suppress_health_check=(HealthCheck.too_slow,), max_examples=50
-)
-settings.register_profile(
-    "dev", deadline=None, suppress_health_check=(HealthCheck.too_slow,), max_examples=5
+    "dev",
+    deadline=None,
+    suppress_health_check=(HealthCheck.too_slow,),
+    max_examples=5
 )
 settings.register_profile(
     "debug",
@@ -25,41 +34,21 @@ settings.register_profile(
 
 
 @pytest.fixture
-def tabular_siamese_unit_neg():
+def contrastive_unit_pos():
     "A single, static example of input into a siamese network for the palmers penguins df"
-    import torch
-    from torch import tensor
-
     return (
-        torch.cat((
-            tensor([1, 2]),
-            tensor([1., 2.])
-        )),
-
-        torch.cat((
-            tensor([-1, -2]),
-            tensor([-1., -2.])
-        )),
+        tensor([1, 0]),
+        tensor([0, 1]),
         tensor(0)
     )
 
 
 @pytest.fixture
-def tabular_siamese_unit_pos():
+def contrastive_unit_neg():
     "A single, static example of input into a siamese network for the palmers penguins df"
-    import torch
-    from torch import tensor
-
     return (
-        torch.cat((
-            tensor([1, 2]),
-            tensor([1., 2.])
-        )),
-
-        torch.cat((
-            tensor([2, 3]),
-            tensor([2., 3.])
-        )),
+        tensor([1, 0]),
+        tensor([0, 1]),
         tensor(1)
     )
 
