@@ -30,7 +30,7 @@ class TabularSiameseDataset(Dataset):
         row2, same = self._draw(i)
         row2_cats, row2_conts = row2[0], row2[1]
 
-        return (row1_cats.long(), row1_conts.float()), (row2_cats.long(), row2_conts.float()), torch.Tensor([int(same)]).squeeze().long()
+        return (row1_cats.long(), row1_conts.float()), (row2_cats.long(), row2_conts.float()), torch.Tensor([int(same)]).squeeze()
 
     def __len__(self): return len(self.tabular_pandas)
 

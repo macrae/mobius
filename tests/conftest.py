@@ -9,7 +9,7 @@ settings.register_profile(
     "maximum",
     deadline=None,
     suppress_health_check=(HealthCheck.too_slow,),
-    max_examples=500
+    max_examples=300
 )
 
 settings.register_profile(
@@ -22,7 +22,7 @@ settings.register_profile(
     "dev",
     deadline=None,
     suppress_health_check=(HealthCheck.too_slow,),
-    max_examples=5
+    max_examples=10
 )
 settings.register_profile(
     "debug",
@@ -33,8 +33,9 @@ settings.register_profile(
 )
 
 
+# TODO: combine siamese_input_pos & siamese_input_neg into siamese_input(label: int)
 @pytest.fixture
-def contrastive_unit_pos():
+def siamese_input_pos():
     "A single, static example of input into a siamese network for the palmers penguins df"
     return (
         tensor([1, 0]),
@@ -44,7 +45,7 @@ def contrastive_unit_pos():
 
 
 @pytest.fixture
-def contrastive_unit_neg():
+def siamese_input_neg():
     "A single, static example of input into a siamese network for the palmers penguins df"
     return (
         tensor([1, 0]),
@@ -54,7 +55,7 @@ def contrastive_unit_neg():
 
 
 @pytest.fixture
-def tabular_siamese_record():
+def tabular_siamese_input():
     "A single, static example of input into a siamese network for the palmers penguins df"
     import torch
     from torch import tensor
@@ -93,6 +94,7 @@ def tabular_siamese_record():
                     1.3700, -0.1685,  2.5621,  1.6272,  2.0446,  0.8310, -1.4884, -1.7928,
                     -0.0397, -0.4046, -0.2693, -1.6486,  6.0291,  0.3345,  0.3269])
         )),
+
         tensor(0)
     )
 

@@ -2,45 +2,52 @@ import pytest
 from hypothesis import given, settings
 from mobius import losses
 
-from strategies import some_contrastive_record
+from strategies import some_siamese_input, some_tabular_siamese_input
 
-settings.load_profile("maximum")  # set search strategies behavior to dev (less robust strategies)
+# set search strategies behavior to dev (less robust strategies)
+settings.load_profile("maximum")
 
 
 # TODO: fill this out more...
-def test_ContrastiveLoss(tabular_siamese_record):
+def test_contrastive_loss_class(tabular_siamese_input):
     "Test the ContrastiveLoss object methods"
     results = set(dir(losses.ContrastiveLoss))
     expected = {"forward"}
     assert expected.issubset(results)
 
     contrastive_loss = losses.ContrastiveLoss(margin=0.0)
-    contrastive_loss.forward(tabular_siamese_record)
+    contrastive_loss.forward(tabular_siamese_input)
 
 
 # TODO: parameterize the contrastive_unit_ pytest fixture with label arg, and combine unit tests
-def test_ContrastiveLoss_unit_pos(contrastive_unit_pos):
+def test_contrastive_loss_unit_pos(siamese_input_pos):
     "Unit test a positive tabular siamese example"
     contrastive_loss = losses.ContrastiveLoss(margin=2.0)
-    loss = contrastive_loss.forward(contrastive_unit_pos)
+    loss = contrastive_loss.forward(siamese_input_pos)
     assert loss.numpy() == pytest.approx(1.00, 1e-2)
 
 
 # TODO: parameterize the contrastive_unit_ pytest fixture with label arg, and combine unit tests
-def test_ContrastiveLoss_unit_neg(contrastive_unit_neg):
+def test_contrastive_loss_unit_neg(siamese_input_neg):
     "Unit test a negative tabular siamese example"
     contrastive_loss = losses.ContrastiveLoss(margin=2.0)
-    loss = contrastive_loss.forward(contrastive_unit_neg)
+    loss = contrastive_loss.forward(siamese_input_neg)
     assert loss.numpy() == pytest.approx(0.171, 1e-2)
 
 
-@given(some_contrastive_record())
-def test_ContrastiveLoss_property_is_positive(some_contrastive_record):
-    "Unit test a negative tabular siamese example"
-    # import ipdb; ipdb.set_trace()
-    p1, p2, y = some_contrastive_record.p1, some_contrastive_record.p2, some_contrastive_record.y
+@given(some_siamese_input())
+def test_contrastive_loss_is_positive(some_siamese_input):
+    "Property-based test that contrastive loss is never negative"
+    p1, p2, y = some_siamese_input.p1, some_siamese_input.p2, some_siamese_input.y
     contrastive_loss = losses.ContrastiveLoss(margin=2.0)
     loss = contrastive_loss.forward((p1, p2, y))
+    assert loss.numpy() >= 0.
+
+
+@given(some_tabular_siamese_input())
+def test_contrastive_loss_tabular_siamese_model(some_tabular_siamese_input):
+    contrastive_loss = losses.ContrastiveLoss(margin=0.0)
+    loss = contrastive_loss.forward(some_tabular_siamese_input)
     assert loss.numpy() >= 0.
 
 # TODO:
