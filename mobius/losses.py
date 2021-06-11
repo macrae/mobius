@@ -28,8 +28,8 @@ class ContrastiveLoss(Module):
         pdist = torch.pow(dist, 2)
 
         # negative distance
-        ndist = torch.pow(
-            torch.max(torch.tensor((self.margin - dist, 0.0))), 2)
+        # TODO: test this and make sure it is taking the max()
+        ndist = torch.pow(torch.max(torch.tensor((self.margin - dist, 0.0))), 2)
 
         # contrastive loss
         loss = ((1 - label) * 0.5 * pdist) + (label * 0.5 * ndist)

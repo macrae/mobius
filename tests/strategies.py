@@ -62,7 +62,7 @@ def some_siamese_input(draw) -> SiameseInput:
 #                         fast.ai Tabular Siamese Strategies                           #
 ########################################################################################
 
-
+# TODO: this is good for testing TabularSiamaseModel mocking stuff...
 @st.composite
 def some_cats(draw, n) -> tensor:
     # TODO: make this integer encoded

@@ -1,14 +1,28 @@
 import pytest
+import torch
 from hypothesis import given, settings
 from mobius import losses
 
-from strategies import some_siamese_input, some_tabular_siamese_input
+from strategies import some_normal_distribution, some_siamese_input, some_tabular_siamese_input
 
 # set search strategies behavior to dev (less robust strategies)
 settings.load_profile("maximum")
 
 
-# TODO: fill this out more...
+# TODO: refatcor this test...
+@given(some_normal_distribution(100))
+def test_torch_max(some_normal_distribution):
+
+    for val in some_normal_distribution:
+        a = torch.pow(torch.max(torch.tensor([val, 0.])), 2)
+        if val < 0.:
+            b = torch.tensor([0.])
+        else:
+            b = torch.pow(torch.tensor([val]), 2)
+
+        assert all(torch.isclose(a.float(), b.float()))
+
+
 def test_contrastive_loss_class(tabular_siamese_input):
     "Test the ContrastiveLoss object methods"
     results = set(dir(losses.ContrastiveLoss))
