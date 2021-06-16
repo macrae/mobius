@@ -1,7 +1,12 @@
 """pytest configuration file"""
+import pandas as pd
 import pytest
-from hypothesis import HealthCheck, Verbosity, settings
 import torch
+from fastai.data.core import range_of
+from fastai.tabular.all import (Categorify, CategoryBlock, FillMissing,
+                                Normalize, RandomSplitter, TabDataLoader,
+                                TabularPandas, tabular_config, tabular_learner)
+from hypothesis import HealthCheck, Verbosity, settings
 from torch import tensor
 
 # register hypothesis search strategy options
@@ -97,6 +102,49 @@ def tabular_siamese_input():
 
         tensor(0)
     )
+
+
+@pytest.fixture
+def init_tabular_pandas():
+    init = {}
+
+    # dataframe
+    X = [
+        [0.2, 0.1, "A", "B", 1],
+        [0.3, 0.2, "B", "B", 0],
+        [0.1, 0.4, "C", "A", 0],
+        [0.2, 0.1, "A", "B", 1],
+        [0.3, 0.2, "B", "B", 0],
+        [0.1, 0.4, "C", "A", 0],
+        [0.2, 0.1, "A", "B", 1],
+        [0.3, 0.2, "B", "B", 0],
+        [0.1, 0.4, "C", "A", 0],
+        [0.2, 0.1, "A", "B", 1],
+        [0.3, 0.2, "B", "B", 0],
+        [0.1, 0.4, "C", "A", 0],
+        ]        
+    df = pd.DataFrame(X, columns=["val_0", "val_1", "str_0", "str_1", "label"])
+    init["df"] = df
+
+    # tabular pre-processing procs
+    init["procs"] = [FillMissing, Categorify, Normalize]
+
+    # categorical feature names
+    init["cat_names"] = ["str_0", "str_1"]
+
+    # continuous feature names
+    init["cont_names"] = ["val_0", "val_1"]
+
+    # target names
+    init["y_names"] = ["label"]
+
+    # some fast.ai thing :shrug:
+    init["y_block"] = CategoryBlock()
+
+    # dataset splitter func
+    init["splits"] = RandomSplitter(valid_pct=0.10)(range_of(df))
+
+    return init
 
 
 @pytest.fixture
