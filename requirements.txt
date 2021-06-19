@@ -1,4 +1,5 @@
 # roc-it
+jsonlines==2.0.0
 fastai==2.1.8
 fastinference[interp]==0.0.32
 umap-learn

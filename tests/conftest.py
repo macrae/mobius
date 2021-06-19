@@ -2,7 +2,8 @@
 import pandas as pd
 import pytest
 import torch
-from fastai.data.core import range_of
+from fastai.data.core import DataLoaders, range_of
+from fastai.metrics import F1Score, Precision, Recall, accuracy
 from fastai.tabular.all import (Categorify, CategoryBlock, FillMissing,
                                 Normalize, RandomSplitter, TabDataLoader,
                                 TabularPandas, tabular_config, tabular_learner)
@@ -122,7 +123,7 @@ def init_tabular_pandas():
         [0.2, 0.1, "A", "B", 1],
         [0.3, 0.2, "B", "B", 0],
         [0.1, 0.4, "C", "A", 0],
-        ]        
+    ]
     df = pd.DataFrame(X, columns=["val_0", "val_1", "str_0", "str_1", "label"])
     init["df"] = df
 
@@ -145,6 +146,39 @@ def init_tabular_pandas():
     init["splits"] = RandomSplitter(valid_pct=0.10)(range_of(df))
 
     return init
+
+
+@pytest.fixture
+def to(init_tabular_pandas):
+    tabular_pandas = TabularPandas(**init_tabular_pandas)
+
+    # create tabular dataloader
+    trn_dl = TabDataLoader(
+        tabular_pandas.train,
+        bs=2,
+        shuffle=True,
+        drop_last=True)
+
+    val_dl = TabDataLoader(
+        tabular_pandas.valid,
+        bs=2,)
+
+    dls = DataLoaders(trn_dl, val_dl)
+
+    # load the tabular_pandas data through the tabular_learner
+    layers = [32, 16]
+
+    # tabular learner configuration
+    config = tabular_config(ps=[0.2, 0.1], embed_p=0.1)
+
+    return tabular_learner(
+        dls,
+        layers=layers,
+        config=config,
+        metrics=[accuracy,
+                 Precision(average='macro'),
+                 Recall(average='macro'),
+                 F1Score(average='macro')])
 
 
 @pytest.fixture
