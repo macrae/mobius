@@ -29,8 +29,9 @@ class TabularSiameseDataset(Dataset):
     """Siamese Pairs for Tabular dataset."""
 
     def __init__(self, csv_file, jsonl_file, tabular_learner):
-        self.labels = pd.read_csv(csv_file)
-        self.c = len(set(self.labels))
+        self.labels = pd.read_csv(csv_file, index_col=0)
+        self.y_name = tabular_learner.dls.train.y_names[0]
+        self.c = len(set(self.labels[self.y_name]))
         self.jsonl_file = jsonl_file
         self.to = tabular_learner
         self.cat_names = tabular_learner.dls.cat_names
@@ -48,10 +49,10 @@ class TabularSiameseDataset(Dataset):
         row_i_cats, row_i_conts = self.apply_procs(row_i)
         row_j_cats, row_j_conts = self.apply_procs(row_j)
 
-        return (row_i_cats, row_i_conts), (row_j_cats, row_j_conts), torch.Tensor([int(same)]).squeeze()
+        return (row_i_cats.reshape(-1), row_i_conts.reshape(-1)), (row_j_cats.reshape(-1), row_j_conts.reshape(-1)), torch.Tensor([int(same)]).squeeze()
 
     def _draw(self, idx):
-        cls = self.labels.iloc[idx, ]["label"]
+        cls = self.labels.iloc[idx, ][self.y_name]
         same = random.random() < 0.5
         if not same:
             cls = random.choice(
