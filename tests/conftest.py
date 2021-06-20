@@ -1,19 +1,34 @@
 """pytest configuration file"""
+import pandas as pd
 import pytest
+import torch
+from fastai.data.core import DataLoaders, range_of
+from fastai.metrics import F1Score, Precision, Recall, accuracy
+from fastai.tabular.all import (Categorify, CategoryBlock, FillMissing,
+                                Normalize, RandomSplitter, TabDataLoader,
+                                TabularPandas, tabular_config, tabular_learner)
 from hypothesis import HealthCheck, Verbosity, settings
+from torch import tensor
 
 # register hypothesis search strategy options
 settings.register_profile(
-    "suppress_deadline",
+    "maximum",
     deadline=None,
     suppress_health_check=(HealthCheck.too_slow,),
-    max_examples=10,
+    max_examples=300
+)
+
+settings.register_profile(
+    "ci",
+    deadline=None,
+    suppress_health_check=(HealthCheck.too_slow,),
+    max_examples=50
 )
 settings.register_profile(
-    "ci", deadline=None, suppress_health_check=(HealthCheck.too_slow,), max_examples=50
-)
-settings.register_profile(
-    "dev", deadline=None, suppress_health_check=(HealthCheck.too_slow,), max_examples=5
+    "dev",
+    deadline=None,
+    suppress_health_check=(HealthCheck.too_slow,),
+    max_examples=10
 )
 settings.register_profile(
     "debug",
@@ -24,8 +39,29 @@ settings.register_profile(
 )
 
 
+# TODO: combine siamese_input_pos & siamese_input_neg into siamese_input(label: int)
 @pytest.fixture
-def tabular_siamese_record():
+def siamese_input_pos():
+    "A single, static example of input into a siamese network for the palmers penguins df"
+    return (
+        tensor([1, 0]),
+        tensor([0, 1]),
+        tensor(0)
+    )
+
+
+@pytest.fixture
+def siamese_input_neg():
+    "A single, static example of input into a siamese network for the palmers penguins df"
+    return (
+        tensor([1, 0]),
+        tensor([0, 1]),
+        tensor(1)
+    )
+
+
+@pytest.fixture
+def tabular_siamese_input():
     "A single, static example of input into a siamese network for the palmers penguins df"
     import torch
     from torch import tensor
@@ -64,8 +100,85 @@ def tabular_siamese_record():
                     1.3700, -0.1685,  2.5621,  1.6272,  2.0446,  0.8310, -1.4884, -1.7928,
                     -0.0397, -0.4046, -0.2693, -1.6486,  6.0291,  0.3345,  0.3269])
         )),
+
         tensor(0)
     )
+
+
+@pytest.fixture
+def init_tabular_pandas():
+    init = {}
+
+    # dataframe
+    X = [
+        [0.2, 0.1, "A", "B", 1],
+        [0.3, 0.2, "B", "B", 0],
+        [0.1, 0.4, "C", "A", 0],
+        [0.2, 0.1, "A", "B", 1],
+        [0.3, 0.2, "B", "B", 0],
+        [0.1, 0.4, "C", "A", 0],
+        [0.2, 0.1, "A", "B", 1],
+        [0.3, 0.2, "B", "B", 0],
+        [0.1, 0.4, "C", "A", 0],
+        [0.2, 0.1, "A", "B", 1],
+        [0.3, 0.2, "B", "B", 0],
+        [0.1, 0.4, "C", "A", 0],
+    ]
+    df = pd.DataFrame(X, columns=["val_0", "val_1", "str_0", "str_1", "label"])
+    init["df"] = df
+
+    # tabular pre-processing procs
+    init["procs"] = [FillMissing, Categorify, Normalize]
+
+    # categorical feature names
+    init["cat_names"] = ["str_0", "str_1"]
+
+    # continuous feature names
+    init["cont_names"] = ["val_0", "val_1"]
+
+    # target names
+    init["y_names"] = ["label"]
+
+    # some fast.ai thing :shrug:
+    init["y_block"] = CategoryBlock()
+
+    # dataset splitter func
+    init["splits"] = RandomSplitter(valid_pct=0.10)(range_of(df))
+
+    return init
+
+
+@pytest.fixture
+def to(init_tabular_pandas):
+    tabular_pandas = TabularPandas(**init_tabular_pandas)
+
+    # create tabular dataloader
+    trn_dl = TabDataLoader(
+        tabular_pandas.train,
+        bs=2,
+        shuffle=True,
+        drop_last=True)
+
+    val_dl = TabDataLoader(
+        tabular_pandas.valid,
+        bs=2,)
+
+    dls = DataLoaders(trn_dl, val_dl)
+
+    # load the tabular_pandas data through the tabular_learner
+    layers = [32, 16]
+
+    # tabular learner configuration
+    config = tabular_config(ps=[0.2, 0.1], embed_p=0.1)
+
+    return tabular_learner(
+        dls,
+        layers=layers,
+        config=config,
+        metrics=[accuracy,
+                 Precision(average='macro'),
+                 Recall(average='macro'),
+                 F1Score(average='macro')])
 
 
 @pytest.fixture

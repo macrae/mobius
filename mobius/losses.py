@@ -2,8 +2,8 @@ from collections import Counter
 
 import torch
 import torch.nn.functional as F
-from torch.nn import Module
 from fastcore.foundation import L
+from torch.nn import Module
 
 
 class ContrastiveLoss(Module):
@@ -18,14 +18,38 @@ class ContrastiveLoss(Module):
     def forward(self, ops, size_average=True):
         p1, p2, label = ops[0], ops[1], ops[2]
 
-        # distance between positive tensors
-        euclidean_distance = F.pairwise_distance(
-            p1.reshape(1, -1), p2.reshape(1, -1), keepdim=False)
+        # distance between points
+        dist = F.pairwise_distance(
+            p1.reshape(1, -1),
+            p2.reshape(1, -1),
+            keepdim=False)
 
-        loss_contrastive = torch.mean((1-label) * torch.pow(euclidean_distance, 2) +
-                                      (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
+        # positive distance
+        pdist = torch.pow(dist, 2)
 
-        return loss_contrastive
+        # negative distance
+        # TODO: test this and make sure it is taking the max()
+        ndist = torch.pow(torch.max(torch.tensor((self.margin - dist, 0.0))), 2)
+
+        # contrastive loss
+        loss = ((1 - label) * 0.5 * pdist) + (label * 0.5 * ndist)
+
+        return loss.sum()
+
+# class ContrastiveLoss(Module):
+#     """Takes embeddings of two samples and a target label == 1 if samples are from the same class and label == 0 otherwise
+#     """
+#     def __init__(self, margin=5.):
+#         super(ContrastiveLoss, self).__init__()
+#         self.margin = margin
+
+#     def forward(self, ops, size_average=True):
+#         p1, p2, label = ops[0], ops[1], ops[2]
+#         dist = F.pairwise_distance(p1.reshape(1, -1), p2.reshape(1, -1), keepdim=False)
+#         pdist = dist * label
+#         ndist = dist * (1 - label)
+#         loss = 0.5 * ((pdist**2) + (F.relu(self.margin - ndist)**2))
+#         loss.sum()
 
 
 class F1ScoreLoss(Module):
@@ -51,20 +75,3 @@ class F1ScoreLoss(Module):
         f1 = 2 * (precision*recall) / (precision + recall + self.epsilon)
         f1 = f1.clamp(min=self.epsilon, max=1-self.epsilon)
         return 1 - f1.mean()
-
-
-# # Get weights based on the class distribution in the training data
-# def get_weights(dls):
-
-#     classes = dls.vocab[1]
-
-#     # combine the above into a single
-#     train_lbls = L(map(lambda x: classes[x[1]], dls.train_ds))
-#     label_counter = Counter(train_lbls)
-#     n_most_common_class = max(label_counter.values())
-#     print(f'Occurrences of the most common class {n_most_common_class}')
-
-#     # Source: https://discuss.pytorch.org/t/what-is-the-weight-values-mean-in-torch-nn-crossentropyloss/11455/9
-#     weights = [n_most_common_class/v for k,
-#                v in label_counter.items() if v > 0]
-#     return weights
