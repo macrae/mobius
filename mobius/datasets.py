@@ -14,13 +14,6 @@ from torch.nn import Module
 from torch.utils.data import Dataset
 
 
-def load_jsonl(jsonl_file, idx) -> dict:
-    with jsonlines.open(jsonl_file, 'r') as f:
-        for i, json in enumerate(f):
-            if i == idx:
-                return json
-
-
 def write_jsonl(df, path) -> None:
     df.to_json(path, orient='records', lines=True)
 
@@ -28,11 +21,13 @@ def write_jsonl(df, path) -> None:
 class TabularSiameseDataset(Dataset):
     """Siamese Pairs for Tabular dataset."""
 
+    # TODO: avoid passing the tabular learner to the Dataset, just the attr of the learner
     def __init__(self, csv_file, jsonl_file, tabular_learner):
         self.labels = pd.read_csv(csv_file, index_col=0)
         self.y_name = tabular_learner.dls.train.y_names[0]
         self.c = len(set(self.labels[self.y_name]))
         self.jsonl_file = jsonl_file
+        self.jsonl_cache = self.cache_jsonl(jsonl_file)
         self.to = tabular_learner
         self.cat_names = tabular_learner.dls.cat_names
         self.cont_names = tabular_learner.dls.cont_names
@@ -42,7 +37,7 @@ class TabularSiameseDataset(Dataset):
 
     def __getitem__(self, idx):
         # load line from json lines file
-        row_i = load_jsonl(self.jsonl_file, idx)
+        row_i = self.load_jsonl(self.jsonl_file, span=self.jsonl_cache[idx])
         row_j, same = self._draw(idx)
 
         # apply pre-processing
@@ -62,7 +57,8 @@ class TabularSiameseDataset(Dataset):
     def lbl2rows(self, cls):
         idxs = [i for i, label in enumerate(
             self.labels.values) if label == cls]
-        return load_jsonl(self.jsonl_file, random.choice(idxs))
+        random_idx = random.choice(idxs)
+        return self.load_jsonl(self.jsonl_file, span=self.jsonl_cache[random_idx])
 
     def apply_procs(self, row) -> Tuple[tensor]:
         # load row from dict to dataframe
@@ -74,3 +70,22 @@ class TabularSiameseDataset(Dataset):
         # select cats & conts from dataframe
         cats, conts = to.items[self.cat_names].values, to.items[self.cont_names].values
         return tensor(cats).long(), tensor(conts).float()
+
+    @staticmethod
+    def cache_jsonl(jsonl_file) -> dict:
+        with open(jsonl_file, 'r') as f:
+            chars = f.read()
+            spans = list()
+            span = [0]
+            for i, c in enumerate(chars):
+                if c == "\n":
+                    spans.append(span + [i])
+                    span = [i + 1]
+        return spans
+
+    @staticmethod
+    def load_jsonl(jsonl_file, span) -> dict:
+        with open(jsonl_file, 'r') as f:
+            chars = f.read()
+            text = chars[span[0]: span[1]].replace("false", "False").replace("true", "True")
+            return eval(text)
