@@ -1,7 +1,6 @@
 """pytest configuration file"""
 import pandas as pd
 import pytest
-import torch
 from fastai.data.core import DataLoaders, range_of
 from fastai.metrics import F1Score, Precision, Recall, accuracy
 from fastai.tabular.all import (Categorify, CategoryBlock, FillMissing,
