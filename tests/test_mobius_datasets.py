@@ -5,19 +5,10 @@ from mobius.datasets import TabularSiameseDataset
 from torch import Tensor
 
 
-def test_cache_jsonl():
-    spans = TabularSiameseDataset.cache_jsonl(jsonl_file="./tests/data/test_data.jsonl")
-    assert isinstance(spans, list)
-    assert spans[0] == [0, 49]
-    assert spans[1] == [50, 99]
-    assert spans[2] == [100, 149]
-
-
-def test_load_jsonl():
-    spans = TabularSiameseDataset.cache_jsonl("./tests/data/test_data.jsonl")
-    for span in spans:
-        jsonl = TabularSiameseDataset.load_jsonl("./tests/data/test_data.jsonl", span)
-        assert isinstance(jsonl, dict)
+def test_read_jsonl_bytes():
+    list_of_bytes = TabularSiameseDataset.read_jsonl_bytes(
+        "./tests/data/test_data.jsonl")
+    assert isinstance(list_of_bytes, list)
 
 
 def test_unit_test_tabular_siamese_dataset(tabular_siamese_input):
@@ -56,6 +47,7 @@ def test_tabular_siamese_dataset(to, init_tabular_pandas):
 
     assert isinstance(tab_snn_dataset, TabularSiameseDataset)
 
+    # import ipdb; ipdb.set_trace()
     p1, p2, label = tab_snn_dataset.__getitem__(0)
     assert isinstance(p1, Tuple)
     assert isinstance(p2, Tuple)

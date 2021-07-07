@@ -1,16 +1,9 @@
 import random
 from typing import Tuple
-from fastai.torch_core import cat
 
-import jsonlines
 import pandas as pd
 import torch
-import torch.nn.functional as F
-from fastai.losses import CrossEntropyLossFlat
-from fastai.tabular.all import TabularPandas, TabDataLoader
-from fastai.torch_basics import params
 from torch import tensor
-from torch.nn import Module
 from torch.utils.data import Dataset
 
 
@@ -27,7 +20,7 @@ class TabularSiameseDataset(Dataset):
         self.y_name = tabular_learner.dls.train.y_names[0]
         self.c = len(set(self.labels[self.y_name]))
         self.jsonl_file = jsonl_file
-        self.jsonl_cache = self.cache_jsonl(jsonl_file)
+        self.jsonl_bytes = self.read_jsonl_bytes(jsonl_file)
         self.to = tabular_learner
         self.cat_names = tabular_learner.dls.cat_names
         self.cont_names = tabular_learner.dls.cont_names
@@ -37,7 +30,7 @@ class TabularSiameseDataset(Dataset):
 
     def __getitem__(self, idx):
         # load line from json lines file
-        row_i = self.load_jsonl(self.jsonl_file, span=self.jsonl_cache[idx])
+        row_i = self.load_jsonl(idx)
         row_j, same = self._draw(idx)
 
         # apply pre-processing
@@ -50,15 +43,13 @@ class TabularSiameseDataset(Dataset):
         cls = self.labels.iloc[idx, ][self.y_name]
         same = random.random() < 0.5
         if not same:
-            cls = random.choice(
-                [label for label in set(self.labels.values.flatten()) if label != cls])
+            cls = random.choice([label for label in set(self.labels.values.flatten()) if label != cls])
         return self.lbl2rows(cls), int(not same)
 
     def lbl2rows(self, cls):
-        idxs = [i for i, label in enumerate(
-            self.labels.values) if label == cls]
+        idxs = [i for i, label in enumerate(self.labels.values) if label == cls]
         random_idx = random.choice(idxs)
-        return self.load_jsonl(self.jsonl_file, span=self.jsonl_cache[random_idx])
+        return self.load_jsonl(random_idx)
 
     def apply_procs(self, row) -> Tuple[tensor]:
         # load row from dict to dataframe
@@ -72,20 +63,10 @@ class TabularSiameseDataset(Dataset):
         return tensor(cats).long(), tensor(conts).float()
 
     @staticmethod
-    def cache_jsonl(jsonl_file) -> dict:
-        with open(jsonl_file, 'r') as f:
-            chars = f.read()
-            spans = list()
-            span = [0]
-            for i, c in enumerate(chars):
-                if c == "\n":
-                    spans.append(span + [i])
-                    span = [i + 1]
-        return spans
+    def read_jsonl_bytes(file_name) -> dict:
+        with open(file_name, 'rb') as f:
+            file = f.read()
+        return file.split(b'\n')
 
-    @staticmethod
-    def load_jsonl(jsonl_file, span) -> dict:
-        with open(jsonl_file, 'r') as f:
-            chars = f.read()
-            text = chars[span[0]: span[1]].replace("false", "False").replace("true", "True")
-            return eval(text)
+    def load_jsonl(self, idx) -> dict:
+        return eval(self.jsonl_bytes[idx].decode().replace("false", "False").replace("true", "True"))
