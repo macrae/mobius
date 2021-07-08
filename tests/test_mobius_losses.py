@@ -58,11 +58,13 @@ def test_contrastive_loss_is_positive(some_siamese_input):
     assert loss.numpy() >= 0.
 
 
+@settings(max_examples=100)
 @given(some_tabular_siamese_input())
 def test_contrastive_loss_tabular_siamese_model(some_tabular_siamese_input):
-    contrastive_loss = losses.ContrastiveLoss(margin=0.0)
-    loss = contrastive_loss.forward(some_tabular_siamese_input)
-    assert loss.numpy() >= 0.
+    for margin in [0.001, 0.01, 0.1, 1, 10, 20, 50]:
+        contrastive_loss = losses.ContrastiveLoss(margin=margin)
+        loss = contrastive_loss.forward(some_tabular_siamese_input)
+        assert loss.numpy() >= 0.
 
 # TODO:
 # 0) using the DrLIM paper, work out by hand the above unit tests (double check implementation)
