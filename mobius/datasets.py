@@ -69,4 +69,4 @@ class TabularSiameseDataset(Dataset):
         return file.split(b'\n')
 
     def load_jsonl(self, idx) -> dict:
-        return eval(self.jsonl_bytes[idx].decode().replace("false", "False").replace("true", "True"))
+        return eval(self.jsonl_bytes[idx].decode().replace("false", "False").replace("true", "True").replace("null", "None"))
