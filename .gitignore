@@ -118,3 +118,4 @@ data/
 *.npy
 *.csv
 *.png
+*.html
