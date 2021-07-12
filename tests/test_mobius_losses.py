@@ -58,7 +58,7 @@ def test_contrastive_loss_is_positive(some_siamese_input):
     assert loss.numpy() >= 0.
 
 
-@settings(max_examples=100)
+@settings(max_examples=10_00)
 @given(some_tabular_siamese_input())
 def test_contrastive_loss_tabular_siamese_model(some_tabular_siamese_input):
     for margin in [0.001, 0.01, 0.1, 1, 10, 20, 50]:

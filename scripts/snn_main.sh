@@ -1,0 +1,19 @@
+python3 snn_main.py \
+    --tabular_lr "'fit_one_cycle'" \
+    --tabular_n_epoch "1" \
+    --tabular_n_workers "3" \
+    --tabular_batch_size "64" \
+    --tabular_layer_dropout "0." \
+    --tabular_embed_dropout "0." \
+    --tabular_layer_1_neurons "2048" \
+    --tabular_layer_2_neurons "1024" \
+    --tabular_layer_3_neurons "128" \
+    --snn_lr "10e-4" \
+    --snn_n_out "16" \
+    --snn_margin "10." \
+    --snn_n_epoch "25" \
+    --snn_n_workers "3" \
+    --snn_batch_size "128" \
+    --model_dir "'.'" \
+    --device "'cpu'" \
+    --sample "0.02"

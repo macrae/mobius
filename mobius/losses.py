@@ -1,8 +1,5 @@
-from collections import Counter
-
 import torch
 import torch.nn.functional as F
-from fastcore.foundation import L
 from torch.nn import Module
 
 
@@ -18,7 +15,7 @@ class ContrastiveLoss(Module):
     def forward(self, ops, size_average=True):
         p1, p2, label = ops[0], ops[1], ops[2]
 
-        # distance between points
+        # distance between all points (tensor operation)
         dist = F.pairwise_distance(
             p1.reshape(1, -1),
             p2.reshape(1, -1),
@@ -28,20 +25,17 @@ class ContrastiveLoss(Module):
         pdist = torch.pow(dist, 2)
 
         # negative distance
-        # TODO: test this and make sure it is taking the max()
         ndist = torch.pow(torch.max(torch.tensor((self.margin - dist, 0.0))), 2)
 
         # contrastive loss
+        # 0 indicates they are the same, 1 indicates they are different
         loss = ((1 - label) * 0.5 * pdist) + (label * 0.5 * ndist)
 
-        if size_average:
-            return loss.mean()
-        else:
-            return loss.sum()
+        return loss.sum()
 
 
 class F1ScoreLoss(Module):
-    """Calculate F1 score. Can work with gpu tensors
+    """Calculate F1 score.
     """
 
     def __init__(self, epsilon=1e-7):
@@ -53,7 +47,6 @@ class F1ScoreLoss(Module):
         y_pred = F.softmax(input, dim=1)
 
         tp = (y_true * y_pred).sum(dim=0).to(torch.float32)
-        # tn = ((1 - y_true) * (1 - y_pred)).sum(dim=0).to(torch.float32)
         fp = ((1 - y_true) * y_pred).sum(dim=0).to(torch.float32)
         fn = (y_true * (1 - y_pred)).sum(dim=0).to(torch.float32)
 
