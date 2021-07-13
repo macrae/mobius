@@ -3,82 +3,112 @@ WITH matches AS (
         account_id,
         windfall_id ,
         candidate_id,
-        confidence,
-        CASE 
-         -- luxury
-         WHEN account_id = 81 THEN "1stDibs"
-         WHEN account_id = 614 THEN "TamaraMellon"
-         WHEN account_id = 585 THEN "Tonal"
-         -- WHEN account_id = 385 THEN "WheelsUp"
-         -- WHEN account_id = 208 THEN "Inspirato"
-         -- WHEN account_id = 1577 THEN "OneFlight"
-         -- alternative investment
-         -- WHEN account_id = 501 THEN "Cadre"
-         -- WHEN account_id = 679 THEN "Crowdstreet"
-         -- WHEN account_id = 1047 THEN "Equaim"
-         -- WHEN account_id = 1218 THEN "EquityEstates"
-         -- WHEN account_id = 1246 THEN "EquityMultiple"
-         WHEN account_id = 1050 THEN "MasterWorks"
-         WHEN account_id = 753 THEN "Microventures"
-         -- WHEN account_id = 1473 THEN "Portfolia"        
-         -- insurance
-         -- WHEN account_id = 514 THEN "HealthIQ"
-         -- WHEN account_id = 1344 THEN "PureInsurance"
-         -- finance
-         -- WHEN account_id = 1219 THEN "SmartBiz"
-         -- health
-         -- WHEN account_id = 220 THEN "GrandViewHealth"
-         -- WHEN account_id = 352 THEN "NewEnglandBaptistHospital"
-         -- WHEN account_id = 1216 THEN "NuvanceHealth"
-         -- WHEN account_id = 654 THEN "ProvidenceHealth"
-         -- WHEN account_id = 1197 THEN "StCharles"
-         END AS account_name,
-         CASE 
-         -- luxury
-         WHEN account_id = 81 THEN "lux"
-         WHEN account_id = 614 THEN "lux"
-         WHEN account_id = 585 THEN "lux"
-         -- WHEN account_id = 385 THEN "lux"
-         -- WHEN account_id = 208 THEN "lux"
-         -- WHEN account_id = 1577 THEN "lux"
-         -- alternative investment
-         -- WHEN account_id = 501 THEN "alt"
-         -- WHEN account_id = 679 THEN "alt"
-         -- WHEN account_id = 1047 THEN "alt"
-         -- WHEN account_id = 1218 THEN "alt"
-         -- WHEN account_id = 1246 THEN "alt"
-         WHEN account_id = 1050 THEN "alt"
-         WHEN account_id = 753 THEN "alt"
-         -- WHEN account_id = 1473 THEN "alt"
-         -- insurance
-         -- WHEN account_id = 514 THEN "insurance"
-         -- WHEN account_id = 1344 THEN "insurance"
-         -- finance
-         -- WHEN account_id = 1219 THEN "finance"
-         -- health
-         -- WHEN account_id = 220 THEN "health-donor"
-         -- WHEN account_id = 352 THEN "health-donor"
-         -- WHEN account_id = 1216 THEN "health-donor"
-         -- WHEN account_id = 654 THEN "health-donor"
-         -- WHEN account_id = 1197 THEN "health-donor"
-         END AS label,
-    FROM `portal.match`
-    )
+        confidence
+    FROM `portal.match`),
+    
+# TODO: add employment features
 
-SELECT
-    m.label,
-    audience.*,
-    latest.city,
-    latest.state,
-    latest.zipcode,
-    latest.county,
-    latest.metroName,
-    realEstateInvestor,
-    personalInvestor,
-    FROM
-    `tranquil-garage-139216.people.audience_latest` audience
-    LEFT JOIN `tranquil-garage-139216.people.audience_dbusa_features` dbusa using(id)
-    LEFT JOIN `tranquil-garage-139216.people.latest` latest ON latest.id = audience.id
-    LEFT JOIN matches m ON audience.id = m.windfall_id
-    WHERE m.label IS NOT NULL
-    AND m.confidence > 0.90
+
+accounts_opps as (
+            select distinct
+                a.Id as account_id,
+                a.Member_Number__c as member_id,
+                cast(PARSE_DATETIME("%Y-%m-%d", CloseDate) as date) as close_date,
+                cast(Total_Purchase_Price_Fund_Program__c as float64) as fund_amount,
+                case
+                    when a.Member_Account_Type__c = 'Connect' then 'Connect'
+                    when a.Member_Account_Type__c = 'Individual' then 'Core'
+                    else 'Others'
+                end as membership_type,
+                cast(PARSE_DATETIME("%Y-%m-%d", Member_Start_Date__c) as date) as member_start_date
+            from `wheelsup.sfdc_account` a
+            left join `wheelsup.sfdc_opportunity` o on o.AccountId = a.Id
+            where True
+                and o.StageName = 'Closed Won'
+                and a.Member_Account_Type__c in ('Individual', 'Connect')
+                and a.IsDeleted = 'false'
+                and o.IsDeleted = 'false'
+                and a.Member_Number__c is not null
+        )
+        ,
+        agg_funds as (
+            select
+                member_id,
+                account_id,
+                membership_type,
+                sum(fund_amount) as total_funds,
+                case
+                    when sum(fund_amount) > 0 then True
+                    else False
+                end as is_funded
+            from accounts_opps
+            group by 1,2,3
+        )
+        ,
+        wf_match as (
+            select distinct
+                a.*,
+                c.How_Many_Private_Flights_Per_Year__c as private_flights, 
+                c.id as contact_id,
+                w.id as windfall_id,
+                m.candidate_id as candidate_id,
+                w.*,
+                case
+                    when w.id is not null then True
+                    else False
+                end as is_matched
+            from agg_funds a
+                left join  `wheelsup.sfdc_contact` c on  c.AccountId = a.account_id
+                left join `portal.match` m on m.account_id = 385 and c.id = m.candidate_id and confidence >= 0.6
+                left join `people.audience_latest` w on m.windfall_id = w.id
+            where Primary_Contact__c = 'true'
+        )
+        ,
+        dedupe_contacts as (
+            with for_dedupe as (
+                select *, row_number() over (partition by account_id) rn
+                from wf_match
+            )
+            select * except (rn)
+            from for_dedupe
+            where rn=1
+        ),
+
+raw_data AS (
+  SELECT DISTINCT
+      CASE WHEN dedupe_contacts.membership_type IS NULL THEN "None" ELSE dedupe_contacts.membership_type END AS label,
+      audience.* EXCEPT(recentDeathDate, recentFoundationAssociationDate, isFoundationOfficer, recentFoundationTrusteeDate, hasFoundationAssociation, hasCharityBoardMember, hasCharityOfficer,
+                      isArtsCause,	isEducationCause,	isEnvironmentalCause,	isAnimalCause,	isHealthCause,	isHumanServicesCause,	isInternationalCause,	isSocialBenefitCause,	isReligiousCause,
+                      isHouseholdDebt, isCharityBoardMember, isCharityOfficer, is990Donation,	isCoopDonation,	isFECContribution,	isStateContribution,
+                      logMaxDonationAmount_1year,	logSumDonationAmount_1year,	logsumCOOPDonation_1year,	logsumFECDonation_1year,	logsumStateContribution_1year,	countNumCharities_1year, 
+                      logMaxDonationAmount_3year,	logSumDonationAmount_3year,	logsum990Donation_3year,	logsumCOOPDonation_3year,	logsumFECDonation_3year,	logsumStateContribution_3year,	countNumCharities_3year,	
+                      logMaxDonationAmount_5year,	logSumDonationAmount_5year,	logsum990Donation_5year,	logsumCOOPDonation_5year,	logsumFECDonation_5year,	logsumStateContribution_5year,	countNumCharities_5year,
+                      lux_athletic, lux_flight, lux_goods, lux_travel, num_vehicles, num_luxury_vehicles, num_ultra_luxury_vehicles, num_cars, num_trucks, num_suvs, num_vans, metroRank),
+      dbusa.realEstateInvestor,
+      dbusa.personalInvestor,
+      latest.city,
+      latest.state,
+      latest.zipcode,
+      latest.county,
+      latest.metroName,
+      latest.censusPlaceFIPS,
+      latest.primaryCarMake,
+      latest.primaryCarModel,
+      latest.isImportedCarOwner,
+      latest.numberOfVehicles,
+      FROM
+      `tranquil-garage-139216.people.audience_latest` audience
+      LEFT JOIN `tranquil-garage-139216.people.audience_dbusa_features` dbusa using(id)
+      LEFT JOIN `tranquil-garage-139216.people.latest` latest ON latest.id = audience.id
+      LEFT JOIN matches m ON audience.id = m.windfall_id
+      LEFT JOIN dedupe_contacts ON dedupe_contacts.windfall_id = audience.id
+      AND m.confidence > 0.90
+      )
+      
+SELECT * EXCEPT(rn)
+FROM (
+  SELECT *,
+  ROW_NUMBER() OVER(PARTITION BY label ORDER BY RAND()) AS rn
+  FROM raw_data)
+WHERE rn <= 7000
+ORDER BY id, label

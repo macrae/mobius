@@ -1,7 +1,7 @@
-python3 snn_main.py \
+python3.8 snn_main.py \
     --tabular_lr "'fit_one_cycle'" \
-    --tabular_n_epoch "1" \
-    --tabular_n_workers "3" \
+    --tabular_n_epoch "3" \
+    --tabular_n_workers "12" \
     --tabular_batch_size "64" \
     --tabular_layer_dropout "0." \
     --tabular_embed_dropout "0." \
@@ -12,8 +12,8 @@ python3 snn_main.py \
     --snn_n_out "16" \
     --snn_margin "10." \
     --snn_n_epoch "25" \
-    --snn_n_workers "3" \
-    --snn_batch_size "128" \
+    --snn_n_workers "20" \
+    --snn_batch_size "64" \
     --model_dir "'.'" \
     --device "'cpu'" \
-    --sample "0.02"
+    --sample "1.0"

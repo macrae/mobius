@@ -2,7 +2,9 @@ import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 import torch
+import umap
 from fastai.callback.core import Callback
 from sklearn.manifold import TSNE
 
@@ -12,6 +14,7 @@ from mobius.charts import plot_3d
 class TSNECallback(Callback):
     def after_validate(self):
         plt.clf()
+        plt.figure(figsize=(12, 8), dpi=200)
         t = int(time.time())
         valid_encoded = list()
         for i in range(len(self.dls.valid.dataset.labels)):
@@ -30,6 +33,20 @@ class TSNECallback(Callback):
         # write encoded space to csv
         valid_encoded_df.to_csv(f"tsne_{t}_{self.epoch}.csv")
 
+        reducer = umap.UMAP()
+        embedding_valid_umap = reducer.fit_transform(valid_encoded_df.values)
+
+        xs = embedding_valid_umap[:, 0]
+        ys = embedding_valid_umap[:, 1]
+
+        plt.scatter(xs, ys, c=[sns.color_palette()[x] for x in y_valid_label])
+        plt.gca().set_aspect('equal', 'datalim')
+        plt.title('UMAP Projection of Encoded Space', fontsize=24)
+        plt.savefig(f"snn_{t}_epoch_{self.epoch}_validation_data.png",
+                    bbox_inches="tight",
+                    transparent=True)
+
+        # TSNE...
         # TODO: make this more efficient; configure hyperparams if possible
         tsne = TSNE(n_components=3, metric="euclidean", n_iter=500)
         encoded_train_tsne = tsne.fit_transform(valid_encoded_df.values)
@@ -43,4 +60,5 @@ class TSNECallback(Callback):
 
         # TODO: add the `margin` to the path naem
         save_path = f"snn_{t}_epoch_{self.epoch}_validation_data.html"
-        plot_3d(df, x="x", y="y", z="z", c="c", symbol="c", opacity=0.7, save_path=save_path)
+        plot_3d(df, x="x", y="y", z="z", c="c", symbol="c",
+                opacity=0.7, save_path=save_path)
