@@ -107,8 +107,7 @@ def snn(params: dict):
 
     # load the tabular_pandas data through the tabular_learner
     layers = [params["tabular_layer_1_neurons"],
-              params["tabular_layer_2_neurons"],
-              params["tabular_layer_3_neurons"]]
+              params["tabular_layer_2_neurons"]]
 
     # tabular learner configuration
     config = tabular_config(ps=[params["tabular_layer_dropout"]] * len(layers),

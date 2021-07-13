@@ -46,19 +46,19 @@ class TSNECallback(Callback):
                     bbox_inches="tight",
                     transparent=True)
 
-        # TSNE...
-        # TODO: make this more efficient; configure hyperparams if possible
-        tsne = TSNE(n_components=3, metric="euclidean", n_iter=500)
-        encoded_train_tsne = tsne.fit_transform(valid_encoded_df.values)
+        # # TSNE...
+        # # TODO: make this more efficient; configure hyperparams if possible
+        # tsne = TSNE(n_components=3, metric="euclidean", n_iter=500)
+        # encoded_train_tsne = tsne.fit_transform(valid_encoded_df.values)
 
-        xs = encoded_train_tsne[:, 0]
-        ys = encoded_train_tsne[:, 1]
-        zs = encoded_train_tsne[:, 2]
-        color = y_valid_label
+        # xs = encoded_train_tsne[:, 0]
+        # ys = encoded_train_tsne[:, 1]
+        # zs = encoded_train_tsne[:, 2]
+        # color = y_valid_label
 
-        df = pd.DataFrame(zip(xs, ys, zs, color), columns=["x", "y", "z", "c"])
+        # df = pd.DataFrame(zip(xs, ys, zs, color), columns=["x", "y", "z", "c"])
 
-        # TODO: add the `margin` to the path naem
-        save_path = f"snn_{t}_epoch_{self.epoch}_validation_data.html"
-        plot_3d(df, x="x", y="y", z="z", c="c", symbol="c",
-                opacity=0.7, save_path=save_path)
+        # # TODO: add the `margin` to the path naem
+        # save_path = f"snn_{t}_epoch_{self.epoch}_validation_data.html"
+        # plot_3d(df, x="x", y="y", z="z", c="c", symbol="c",
+        #         opacity=0.7, save_path=save_path)
