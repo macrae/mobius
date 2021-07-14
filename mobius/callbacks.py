@@ -1,3 +1,4 @@
+import random
 import time
 
 import matplotlib.pyplot as plt
@@ -13,6 +14,9 @@ from mobius.charts import plot_3d
 
 class TSNECallback(Callback):
     def after_validate(self):
+        # # half of the time run the callback
+        # if random.random() < 0.5:
+        #     return
         plt.clf()
         plt.figure(figsize=(12, 8), dpi=200)
         t = int(time.time())
@@ -39,9 +43,20 @@ class TSNECallback(Callback):
         xs = embedding_valid_umap[:, 0]
         ys = embedding_valid_umap[:, 1]
 
-        plt.scatter(xs, ys, c=[sns.color_palette()[x] for x in y_valid_label])
+        df = pd.DataFrame(zip(xs, ys, y_valid_label), columns=["x", "y", "label"])
+
+        # TODO: add additional umap plot for scatter; also, update legend name.
+        sns.kdeplot(data=df, x="x", y="y", hue="label", fill=True, levels=5, alpha=0.5)
         plt.gca().set_aspect('equal', 'datalim')
-        plt.title('UMAP Projection of Encoded Space', fontsize=24)
+        plt.title('UMAP Projection of Encoded Space', fontsize=12)
+        plt.savefig(f"snn_{t}_epoch_{self.epoch}_density_area.png",
+                    bbox_inches="tight",
+                    transparent=True)
+
+        sns.kdeplot(data=df, x="x", y="y", hue="label", fill=False, levels=5)
+        sns.scatterplot(data=df, x="x", y="y", hue="label", alpha=0.5)
+        plt.gca().set_aspect('equal', 'datalim')
+        plt.title('UMAP Projection of Encoded Space', fontsize=12)
         plt.savefig(f"snn_{t}_epoch_{self.epoch}_validation_data.png",
                     bbox_inches="tight",
                     transparent=True)
