@@ -21,14 +21,18 @@ class TSNECallback(Callback):
         plt.figure(figsize=(12, 8), dpi=200)
         t = int(time.time())
         valid_encoded = list()
+
+        # if self.epoch % 2 == 0:
         for i in range(len(self.dls.valid.dataset.labels)):
-            p, _, _ = self.dls.valid_ds.__getitem__(i)
+            x, y = self.dls.valid_ds.__getitem__(i)
 
             # rehsape into mini-batch size 1
-            p = p[0].reshape(1, -1), p[1].reshape(1, -1)
+            # p1, _ = x[0].reshape(1, -1), x[1].reshape(1, -1)
+            p1 = [t.unsqueeze(0) for t in x[0]]
 
             # encode the household into output embedding space
-            p_encode = self.model.encode(p)
+            # breakpoint()
+            p_encode = self.model.encode(p1)
             valid_encoded.append(p_encode)
 
         y_valid_label = self.dls.valid.dataset.labels["label"]
@@ -37,7 +41,8 @@ class TSNECallback(Callback):
         # write encoded space to csv
         valid_encoded_df.to_csv(f"tsne_{t}_{self.epoch}.csv")
 
-        reducer = umap.UMAP()
+        # TODO: look at joblib.parallel => x do 1 thing... process pool
+        reducer = umap.UMAP() 
         embedding_valid_umap = reducer.fit_transform(valid_encoded_df.values)
 
         xs = embedding_valid_umap[:, 0]

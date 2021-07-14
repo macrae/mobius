@@ -37,7 +37,7 @@ class TabularSiameseDataset(Dataset):
         row_i_cats, row_i_conts = self.apply_procs(row_i)
         row_j_cats, row_j_conts = self.apply_procs(row_j)
 
-        return (row_i_cats.reshape(-1), row_i_conts.reshape(-1)), (row_j_cats.reshape(-1), row_j_conts.reshape(-1)), torch.Tensor([int(same)]).squeeze()
+        return ((row_i_cats.reshape(-1), row_i_conts.reshape(-1)), (row_j_cats.reshape(-1), row_j_conts.reshape(-1))), torch.Tensor([int(same)]).squeeze()
 
     def _draw(self, idx):
         cls = self.labels.iloc[idx, ][self.y_name]

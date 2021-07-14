@@ -7,7 +7,6 @@ python3.8 snn_main.py \
     --tabular_embed_dropout "0." \
     --tabular_layer_1_neurons "512" \
     --tabular_layer_2_neurons "64" \
-    --tabular_layer_3_neurons "32" \
     --snn_lr "10e-6" \
     --snn_n_out "64" \
     --snn_margin "0.2" \

@@ -12,8 +12,8 @@ class ContrastiveLoss(Module):
         super(ContrastiveLoss, self).__init__()
         self.margin = margin
 
-    def forward(self, ops, size_average=True):
-        p1, p2, label = ops[0], ops[1], ops[2]
+    def forward(self, x, y, reduction="mean"):
+        p1, p2, = x[0], x[1]
 
         # distance between all points (tensor operation)
         dist = F.pairwise_distance(
@@ -29,9 +29,12 @@ class ContrastiveLoss(Module):
 
         # contrastive loss
         # 0 indicates they are the same, 1 indicates they are different
-        loss = ((1 - label) * 0.5 * pdist) + (label * 0.5 * ndist)
+        loss = ((1 - y) * 0.5 * pdist) + (y * 0.5 * ndist)
 
-        return loss.sum()
+        if reduction == "mean":
+            return loss.mean()
+        else:
+            raise(NotImplementedError)
 
 
 class F1ScoreLoss(Module):
