@@ -1,0 +1,20 @@
+python3 tabular_main.py \
+    --tabular_lr "'fit_one_cycle'" \
+    --tabular_n_epoch "3" \
+    --tabular_n_workers "12" \
+    --tabular_batch_size "128" \
+    --tabular_layer_dropout "0." \
+    --tabular_embed_dropout "0." \
+    --tabular_layer_1_neurons "1024" \
+    --tabular_layer_2_neurons "512" \
+    --tabular_layer_3_neurons "32" \
+    --snn_lr "10e-6" \
+    --snn_n_out "64" \
+    --snn_margin "0.2" \
+    --snn_n_epoch "50" \
+    --snn_n_workers "20" \
+    --snn_batch_size "32" \
+    --model_dir "'.'" \
+    --device "'cpu'" \
+    --sample "1.0" \
+    --label_name "'label_alternative_investment'"

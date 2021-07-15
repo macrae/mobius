@@ -34,6 +34,7 @@ def test_contrastive_loss_class(tabular_siamese_input):
 
 
 # TODO: parameterize the contrastive_unit_ pytest fixture with label arg, and combine unit tests
+# TODO: take into account batch size and how aggregation over batch is applied
 def test_contrastive_loss_unit_pos(siamese_input_pos):
     "Unit test a positive tabular siamese example"
     contrastive_loss = losses.ContrastiveLoss(margin=2.0)

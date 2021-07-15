@@ -1,0 +1,20 @@
+{
+   "accuracy": 0.999625,
+   "average_precision": 0.9999995520627647,
+   "average_recall": 0.999456264495712,
+   "brier_score_lose": 0.01970373116840278,
+   "f1_max": 0.9997269003186163,
+   "imbalancedness_ratio": 0.686375,
+   "log_loss": 0.11556743868740606,
+   "matthews_corrcoef": 0.9991289579155799,
+   "n_samples": 16000,
+   "precision": 0.999544875295831,
+   "precision_at_recall": {
+      "recall: 0.5": 1.0,
+      "recall: 0.8": 1.0,
+      "recall: 0.9": 1.0
+   },
+   "recall": 0.9999089419049354,
+   "roc_auc": 0.9999990745390896,
+   "threshold_for_cm": 0.5
+}

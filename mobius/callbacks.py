@@ -7,10 +7,18 @@ import seaborn as sns
 import torch
 import umap
 from fastai.callback.core import Callback
+from joblib import Parallel, delayed
+from seaborn.distributions import kdeplot
 from sklearn.manifold import TSNE
 
 from mobius.charts import plot_3d
 
+WINDFALL_PRIMARY_COLORS = [
+    "#1fa5c1",  # windfall blue
+    "#cccccc",  # grey
+    "#b6d7a8",  # green
+    "#fce5cd"  # yellow
+]
 
 class TSNECallback(Callback):
     def after_validate(self):
@@ -23,15 +31,15 @@ class TSNECallback(Callback):
         valid_encoded = list()
 
         # if self.epoch % 2 == 0:
+
+        # TODO: sample validation data...
         for i in range(len(self.dls.valid.dataset.labels)):
             x, y = self.dls.valid_ds.__getitem__(i)
 
             # rehsape into mini-batch size 1
-            # p1, _ = x[0].reshape(1, -1), x[1].reshape(1, -1)
             p1 = [t.unsqueeze(0) for t in x[0]]
 
             # encode the household into output embedding space
-            # breakpoint()
             p_encode = self.model.encode(p1)
             valid_encoded.append(p_encode)
 
@@ -43,42 +51,27 @@ class TSNECallback(Callback):
 
         # TODO: look at joblib.parallel => x do 1 thing... process pool
         reducer = umap.UMAP() 
+        # embedding_valid_umap = Parallel(n_jobs=1)(delayed(reducer.fit_transform)()(valid_encoded_df.values))
         embedding_valid_umap = reducer.fit_transform(valid_encoded_df.values)
 
         xs = embedding_valid_umap[:, 0]
         ys = embedding_valid_umap[:, 1]
 
-        df = pd.DataFrame(zip(xs, ys, y_valid_label), columns=["x", "y", "label"])
+        kde_plots = dict()
+        for label in set(y_valid_label):
+            kde_plots[label] = dict()
+            kde_plots[label]["x"] = [x for x, l in zip(xs, y_valid_label) if l == label]
+            kde_plots[label]["y"] = [y for y, l in zip(ys, y_valid_label) if l == label]
 
         # TODO: add additional umap plot for scatter; also, update legend name.
-        sns.kdeplot(data=df, x="x", y="y", hue="label", fill=True, levels=5, alpha=0.5)
+        for i, label in enumerate(kde_plots):
+            x = kde_plots[label]["x"]
+            y = kde_plots[label]["y"]
+            sns.scatterplot(x, y, color=WINDFALL_PRIMARY_COLORS[i], alpha=0.5, s=12)
+            sns.kdeplot(x, y, color=WINDFALL_PRIMARY_COLORS[i], levels=5, shade=False, shade_lowest=True)
+
         plt.gca().set_aspect('equal', 'datalim')
         plt.title('UMAP Projection of Encoded Space', fontsize=12)
         plt.savefig(f"snn_{t}_epoch_{self.epoch}_density_area.png",
                     bbox_inches="tight",
                     transparent=True)
-
-        sns.kdeplot(data=df, x="x", y="y", hue="label", fill=False, levels=5)
-        sns.scatterplot(data=df, x="x", y="y", hue="label", alpha=0.5)
-        plt.gca().set_aspect('equal', 'datalim')
-        plt.title('UMAP Projection of Encoded Space', fontsize=12)
-        plt.savefig(f"snn_{t}_epoch_{self.epoch}_validation_data.png",
-                    bbox_inches="tight",
-                    transparent=True)
-
-        # # TSNE...
-        # # TODO: make this more efficient; configure hyperparams if possible
-        # tsne = TSNE(n_components=3, metric="euclidean", n_iter=500)
-        # encoded_train_tsne = tsne.fit_transform(valid_encoded_df.values)
-
-        # xs = encoded_train_tsne[:, 0]
-        # ys = encoded_train_tsne[:, 1]
-        # zs = encoded_train_tsne[:, 2]
-        # color = y_valid_label
-
-        # df = pd.DataFrame(zip(xs, ys, zs, color), columns=["x", "y", "z", "c"])
-
-        # # TODO: add the `margin` to the path naem
-        # save_path = f"snn_{t}_epoch_{self.epoch}_validation_data.html"
-        # plot_3d(df, x="x", y="y", z="z", c="c", symbol="c",
-        #         opacity=0.7, save_path=save_path)
