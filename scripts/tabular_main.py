@@ -29,6 +29,7 @@ import config.label_environment_donor as config_label_environment_donor
 import config.label_healthcare_donor as config_label_healthcare_donor
 import config.label_lux_goods as config_label_lux_goods
 import config.label_lux_travel as config_label_lux_travel
+from fastai.callback.training import ShortEpochCallback
 
 # GCP Clients
 bigquery_client = bigquery.Client(project="tranquil-garage-139216")
@@ -38,7 +39,7 @@ warnings.filterwarnings('ignore')
 pd.options.display.max_rows = 50
 pd.options.display.max_columns = 999
 
-def data_prep(config, load_from_bq=True, print_sql=False):
+def data_prep(config, load_from_bq=False, print_sql=False):
     # load sql template
     fd = open('./train.sql', 'r')
     sql_template = fd.read()
@@ -106,7 +107,7 @@ def snn(params: dict):
 
     raw_data, exclude_vars = data_prep(config)
 
-    df = raw_data.sample(20_000)
+    df = raw_data.sample(1_000)
     df_train_raw, df_val_raw = train_test_split(
         df,
         test_size=0.20,
@@ -150,6 +151,7 @@ def snn(params: dict):
     print('Data shape: ', df.shape)
     
     df = raw_data[df.columns].copy()
+    df.dropna(subset=["metroRank"], inplace=True)
     print('Data shape: ', df.shape)
 
     y_names = ["label"]
@@ -211,13 +213,80 @@ def snn(params: dict):
         layers=layers,
         emb_szs=emb_szs,
         config=config,
-        cbs=[SaveModelCallback],
         metrics=[accuracy,
                  Precision(average='macro'),
                  Recall(average='macro'),
                  F1Score(average='macro')])
 
     learn.fit_one_cycle(n_epoch=params["tabular_n_epoch"])
+
+    # score MV leads
+    sql = """
+    WITH
+      audience AS (
+        SELECT *
+        FROM `tranquil-garage-139216.people.audience_latest` a
+        WHERE id IS NOT NULL),
+
+      matches AS (
+        SELECT DISTINCT
+            account_id,
+            windfall_id ,
+            candidate_id,
+            confidence
+        FROM `portal.match`
+        WHERE account_id = 753),
+
+        leads AS (
+            SELECT DISTINCT
+              id AS investorId,
+              m.windfall_id AS windfall_id,
+              PARSE_TIMESTAMP("%Y-%m-%d %H:%M:%S", l.created_at) AS createdAt,
+            FROM
+            `portal_sync.account_753_dataset_0_file_1251551_mv_windfall_data_2021_05_12_csv` l
+            LEFT JOIN matches m ON l.id = m.candidate_id
+          )
+
+    SELECT DISTINCT
+      l.investorId,
+      l.windfall_id AS id,
+      a.* EXCEPT(id),
+      dbusa.* EXCEPT(id)
+      FROM leads l
+      LEFT JOIN audience a ON l.windfall_id = a.id
+      LEFT JOIN matches m ON l.windfall_id = m.windfall_id
+      LEFT JOIN people.audience_dbusa_features dbusa using(id)
+      WHERE m.candidate_id IS NOT NULL
+    """
+
+    mv_leads = bq.query_table_and_cache(sql=sql)
+    mv_cols = [col for col in df.columns.values if col != "label"]
+    mv_leads = mv_leads[mv_cols]
+    mv_leads.dropna(subset=["metroRank"], inplace=True)
+    # mv_leads.dropna(subset=["minHouseholdAge"], inplace=True)
+
+    to = learn.dls.train_ds.new(mv_leads)
+    to.process()
+
+    # create the tabular dataloader
+    # dl = TabDataLoader(to)
+    dl = learn.dls.test_dl(to, bs=64)
+
+    logging.info("Making predictions ...")
+    preds, *_ = learn.get_preds(dl=dl)
+    labels = np.argmax(preds, 1)
+
+    # combine windfall_ids, with model label and scores
+    results = pd.concat([
+        df["id"].reset_index(drop=True),
+        pd.Series(labels),
+        pd.Series(preds[:, 1])
+    ], axis=1
+    )
+    results.columns = ["id", "label", "score"]
+
+    # write scored results to file
+    results.to_csv(f"mv_scores_{params['label_name']}.csv", index=False)
 
 
 def main(args):

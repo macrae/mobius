@@ -1,20 +1,20 @@
 {
-   "accuracy": 0.79,
-   "average_precision": 0.928615902164527,
-   "average_recall": 0.72963080415068,
-   "brier_score_lose": 0.1440136841388889,
-   "f1_max": 0.854526958290946,
-   "imbalancedness_ratio": 0.6865,
-   "log_loss": 0.4272916215840712,
-   "matthews_corrcoef": 0.49041404106596265,
-   "n_samples": 4000,
-   "precision": 0.8187290969899665,
+   "accuracy": 0.77,
+   "average_precision": 0.893925391943773,
+   "average_recall": 0.6780626780626781,
+   "brier_score_lose": 0.16268349999999998,
+   "f1_max": 0.850498338870432,
+   "imbalancedness_ratio": 0.675,
+   "log_loss": 0.4857308636449094,
+   "matthews_corrcoef": 0.4389857925284819,
+   "n_samples": 200,
+   "precision": 0.7696969696969697,
    "precision_at_recall": {
-      "recall: 0.5": 0.9578438147892191,
-      "recall: 0.8": 0.8517801857585139,
-      "recall: 0.9": 0.8090731070496083
+      "recall: 0.5": 0.881578947368421,
+      "recall: 0.8": 0.8014705882352942,
+      "recall: 0.9": 0.7770700636942676
    },
-   "recall": 0.8914785142024764,
-   "roc_auc": 0.8494325804911538,
+   "recall": 0.9407407407407408,
+   "roc_auc": 0.8027350427350427,
    "threshold_for_cm": 0.5
 }
