@@ -1,0 +1,20 @@
+{
+   "accuracy": 1.0,
+   "average_precision": 1.0,
+   "average_recall": 1.0,
+   "brier_score_lose": 0.01542645625,
+   "f1_max": 1.0,
+   "imbalancedness_ratio": 0.330875,
+   "log_loss": 0.09154144986502638,
+   "matthews_corrcoef": 1.0,
+   "n_samples": 16000,
+   "precision": 1.0,
+   "precision_at_recall": {
+      "recall: 0.5": 1.0,
+      "recall: 0.8": 1.0,
+      "recall: 0.9": 1.0
+   },
+   "recall": 1.0,
+   "roc_auc": 1.0,
+   "threshold_for_cm": 0.5
+}

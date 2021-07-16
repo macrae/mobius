@@ -260,7 +260,7 @@ def snn(params: dict):
     """
 
     mv_leads = bq.query_table_and_cache(sql=sql)
-    mv_cols = [col for col in df.columns.values if col != "label"]
+    mv_cols = [col for col in df.columns.values if col != "label"] + ["id"]
     mv_leads = mv_leads[mv_cols]
     mv_leads.dropna(subset=["metroRank"], inplace=True)
     # mv_leads.dropna(subset=["minHouseholdAge"], inplace=True)
